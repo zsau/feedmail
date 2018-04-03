@@ -144,7 +144,7 @@
 		(println "checking" url))
 	(try+
 		(let [
-				transform-fn (or (:transform subscription) identity)
+				map-fn (or (:map subscription) identity)
 				filter-fn (or (:filter subscription) identity)
 				cache-path (cache-path config url)
 				cache (read-cache cache-path)
@@ -153,7 +153,7 @@
 				new-entries (into []
 					(comp
 						(take (:size (:cache config)))
-						(keep transform-fn)
+						(keep map-fn)
 						(filter filter-fn)
 						(filter (comp (complement (set (:ids cache))) :uri)))
 					(sort-entries (:entries feed)))]
@@ -212,7 +212,7 @@
 			:url "http://example.com/"
 			:folder "Folder/Subfolder"
 			:filter any?
-			:transform identity
+			:map identity
 			:suppress-errors false}])})
 
 (defn -main [& args]

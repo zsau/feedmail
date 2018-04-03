@@ -43,7 +43,7 @@ Here's a more comprehensive example, which assumes more Clojure knowledge. Keys 
    {:url "http://nedroid.com/feed/"
     :folder "Comics/Nedroid"
     ;Override the author of each entry to be "Beartato"
-    :transform #(assoc % :author "Beartato")
+    :map #(assoc % :author "Beartato")
     ;Squelches output from any errors encountered while fetching this feed. Useful for flaky feeds that generate too many cron emails.
     :suppress-errors true}
    ;URLs like `script:/path/to/script` tell feedparser to execute an external command, which should output RSS or Atom content. Useful for HTML-scraping wrappers that generate RSS feeds for sites that don't provide one, or even for generating feeds from sources other than websites.
