@@ -226,7 +226,7 @@
 						(read-config (:config options))
 						(select-keys options [:verbose :dry-run]))]
 					(when (:verbose config)
-						(println "config:" config))
+						(println "config:" (update-in config [:imap] dissoc :password)))
 					(.mkdir (java.io.File. (:path (:cache config))))
 					(check-subscriptions config arguments)
 					(shutdown-agents)))))
