@@ -93,6 +93,17 @@
 		(sort-by item-date #(compare %2 %1) items)
 			items))
 
+(defn resolve-uri [uri base]
+	(if uri
+		(.toString (.resolve (java.net.URI. base) uri))
+		base))
+
+(defn resolve-links
+	([base] ; transducer
+		(map #(update-in % [:link] resolve-uri base)))
+	([base items]
+		(into [] (resolve-links base) items)))
+
 (defn item->email [config feed item]
 	(let [author (item-author feed item)] {
 		:from (mail/address (:email author) (:name author))
@@ -154,7 +165,8 @@
 						(take (:size (:cache config)))
 						(keep map-fn)
 						(filter filter-fn)
-						(filter (comp (complement (set (:ids cache))) :uri)))
+						(filter (comp (complement (set (:ids cache))) :uri))
+						(resolve-links url))
 					(sort-items (:entries feed)))]
 			(when (:verbose config)
 				(println "-> got" (count new-items) "new items")
