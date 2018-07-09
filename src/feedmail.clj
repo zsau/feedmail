@@ -113,16 +113,15 @@
 	(let [{:keys [exit out]} (shell/sh path)] ; !!! DANGER: running arbitrary external command from config !!!
 		{:body out, :status (if (zero? exit) 200 500)}))
 
-(defn fetch* [url date]
-	(let [uri (java.net.URI. url)]
+(defn fetch* [uri date]
+	(let [uri (java.net.URI. uri)]
 		(if (= "script" (.getScheme uri))
 			(script-get (.getSchemeSpecificPart uri))
-			(let [headers (if date {"If-Modified-Since" date} {})]
-				(http/get url {
-					:http-builder-fns [#(.disableCookieManagement %)]
-					:headers headers
-					:throw-exceptions false
-					:decode-cookies false})))))
+			(http/get (.toString uri) {
+				:http-builder-fns [(fn [builder _] (.disableCookieManagement builder))]
+				:headers (if date {"If-Modified-Since" date} {})
+				:throw-exceptions false
+				:decode-cookies false}))))
 
 ; Memoize fetched URLs to facilitate using the same URL in more than one subscription (e.g. a combined feed that's split via multiple filters). A FIFO cache of size 1 suffices, since we sort subscriptions by URL before fetching.
 (def memo-fetch (memo/fifo fetch* :fifo/threshold 1))
@@ -174,7 +173,7 @@
 		; ROME throws IllegalArgumentException sometimes for invalid documents
 		(catch+ [IllegalArgumentException java.io.IOException java.net.ConnectException java.net.UnknownHostException javax.mail.MessagingException com.rometools.rome.io.FeedException org.apache.http.HttpException] e
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
-		(catch Exception e (report-feed-error name url e) (throw e))))
+		(catch Exception e (report-feed-error url e) (throw e))))
 
 (defn check-subscriptions [{:keys [imap subscriptions] :as config} subscription-names-to-check]
 	(let [
