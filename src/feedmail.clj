@@ -88,12 +88,12 @@
 					(html/html-content value)
 					(html/content value)))))
 
-(defn sort-entries [entries]
-	(if (item-date (first entries))
-		(sort-by item-date #(compare %2 %1) entries)
-			entries))
+(defn sort-items [items]
+	(if (item-date (first items))
+		(sort-by item-date #(compare %2 %1) items)
+			items))
 
-(defn entry->email [config feed item]
+(defn item->email [config feed item]
 	(let [author (item-author feed item)] {
 		:from (mail/address (:email author) (:name author))
 		:to (mail/address (recipient (:imap config)))
@@ -149,26 +149,26 @@
 				cache (read-cache cache-path)
 				body (fetch url (:date cache))
 				feed (parse-feed body)
-				new-entries (into []
+				new-items (into []
 					(comp
 						(take (:size (:cache config)))
 						(keep map-fn)
 						(filter filter-fn)
 						(filter (comp (complement (set (:ids cache))) :uri)))
-					(sort-entries (:entries feed)))]
+					(sort-items (:entries feed)))]
 			(when (:verbose config)
-				(println "-> got" (count new-entries) "new items")
-				(doseq [e new-entries]
+				(println "-> got" (count new-items) "new items")
+				(doseq [e new-items]
 					(println e)))
 			(when-not (:dry-run config)
 				(mail/append-messages store {:name (:folder subscription) :create true}
-					(map (partial entry->email config feed)
-						(reverse new-entries)))
+					(map (partial item->email config feed)
+						(reverse new-items)))
 				(write-cache cache-path {
 					:date date
 					:ids
 						(take (:size (:cache config))
-							(concat (map :uri new-entries)
+							(concat (map :uri new-items)
 								(:ids cache)))})))
 		; ROME throws IllegalArgumentException sometimes for invalid documents
 		(catch+ [IllegalArgumentException java.io.IOException java.net.ConnectException java.net.UnknownHostException javax.mail.MessagingException com.rometools.rome.io.FeedException org.apache.http.HttpException] e
