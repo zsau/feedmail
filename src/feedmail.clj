@@ -80,7 +80,7 @@
 
 (defn email-template [s]
 	(html/template (ByteArrayInputStream. (.getBytes s "UTF-8")) [item]
-		[:a.link] (html/set-attr :href (:uri item))
+		[:a.link] (html/set-attr :href (:link item))
 		[:.title] (html/content (:title item))
 		[:.content]
 			(let [{:keys [value type]} (item-content item)]
@@ -100,7 +100,7 @@
 
 (defn resolve-links
 	([base] ; transducer
-		(map #(update-in % [:uri] resolve-uri base)))
+		(map #(update-in % [:link] resolve-uri base)))
 	([base items]
 		(into [] (resolve-links base) items)))
 
