@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!-- RSS generation done by 'Radio UserLand' on Fri, 13 Apr 2001 19:23:02 GMT -->
+<rss version="0.92">
+	<channel>
+		<title>Dave Winer: Grateful Dead</title>
+		<link>http://www.scripting.com/blog/categories/gratefulDead.html</link>
+		<description>A high-fidelity Grateful Dead song every day. This is where we're experimenting with enclosures on RSS news items that download when you're not using your computer. If it works (it will) it will be the end of the Click-And-Wait multimedia experience on the Internet. </description>
+		<lastBuildDate>Fri, 13 Apr 2001 19:23:02 GMT</lastBuildDate>
+		<docs>http://backend.userland.com/rss092</docs>
+		<managingEditor>dave@userland.com (Dave Winer)</managingEditor>
+		<webMaster>dave@userland.com (Dave Winer)</webMaster>
+		<cloud domain="data.ourfavoritesongs.com" port="80" path="/RPC2" registerProcedure="ourFavoriteSongs.rssPleaseNotify" protocol="xml-rpc"/>
+		<item>
+			<description>It's been a few days since I added a song...</description>
+			<enclosure url="http://www.scripting.com/mp3s/weatherReportDicksPicsVol7.mp3" length="6182912" type="audio/mpeg"/>
+			</item>
+		<item>
+			<description>Kevin Drennan started a &lt;a href="http://deadend.editthispage.com/"&gt;Grateful Dead Weblog&lt;/a&gt;...</description>
+			<source url="http://scriptingnews.userland.com/xml/scriptingNews2.xml">Scripting News</source>
+			</item>
+		<item>
+			<description>&lt;a href="http://arts.ucsc.edu/GDead/AGDL/other1.html"&gt;The Other One&lt;/a&gt;, live instrumental, One From The Vault...</description>
+			<enclosure url="http://www.scripting.com/mp3s/theOtherOne.mp3" length="6666097" type="audio/mpeg"/>
+			</item>
+		</channel>
+	</rss>
