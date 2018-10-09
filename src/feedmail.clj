@@ -13,6 +13,32 @@
 		[mail]
 		[net.cgrand.enlive-html :as html]))
 
+(def cli-options [
+	["-h" "--help"]
+	["-v" "--verbose"]
+	["-d" "--dry-run" "Don't upload emails or update cache"]
+	["-c" "--config FILE" "Config file path"
+		:default (str (System/getProperty "user.home") "/.config/feedmail/config.clj")
+		:validate [#(.exists (java.io.File. %)) "no such file"]]]) ;FIXME: real validation (spec?)
+
+(def default-config {
+	:cache {
+		:path (str (System/getProperty "user.home") "/.cache/feedmail")
+		:size 100}
+	:email {
+		:template "<h1><a class='link title'></a></h1><p class='content'></p>"}
+	:imap {
+		:host nil
+		:user nil
+		:password nil}
+	:subscriptions
+		(take 0 [{ ; just for documentation:
+			:url "http://example.com/"
+			:folder "Folder/Subfolder"
+			:filter any?
+			:map identity
+			:suppress-errors false}])})
+
 ; based on https://gist.github.com/Gonzih/5814945
 (defmacro try+ "Like try, but can catch multiple exception types with (catch+ [classname*] name expr)."
 	[& body]
@@ -43,8 +69,9 @@
 	(System/exit status))
 
 (defn read-config [path]
-	(with-open [in (PushbackReader. (clojure.java.io/reader path))]
-		(eval (read in)))) ; !!! DANGER: evals any code in the config !!!
+	(merge default-config
+		(with-open [in (PushbackReader. (clojure.java.io/reader path))]
+			(eval (read in))))) ; !!! DANGER: evals any code in the config !!!
 
 (defn cache-path [config url]
 	(str (:path (:cache config)) "/" (sha1 url)))
@@ -200,32 +227,6 @@
 	(format "usage: feedmail [options] [FEED_NAME ...]\n\nOptions:\n%s"
 		options-summary))
 
-(def cli-options [
-	["-h" "--help"]
-	["-v" "--verbose"]
-	["-d" "--dry-run" "Don't upload emails or update cache"]
-	["-c" "--config FILE" "Config file path"
-		:default (str (System/getProperty "user.home") "/.config/feedmail/config.clj")
-		:validate [#(.exists (java.io.File. %)) "no such file"]]]) ;FIXME: real validation (spec?)
-
-(def default-config {
-	:cache {
-		:path (str (System/getProperty "user.home") "/.cache/feedmail")
-		:size 100}
-	:email {
-		:template "<h1><a class='link title'></a></h1><p class='content'></p>"}
-	:imap {
-		:host nil
-		:user nil
-		:password nil}
-	:subscriptions
-		(take 0 [{ ; just for documentation:
-			:url "http://example.com/"
-			:folder "Folder/Subfolder"
-			:filter any?
-			:map identity
-			:suppress-errors false}])})
-
 (defn -main [& args]
 	(let [{:keys [options arguments errors summary]} (cli/parse-opts args cli-options)]
 		(cond
@@ -234,8 +235,7 @@
 			errors
 				(die 1 (str/join "\n" errors))
 			:else
-				(let [config (merge default-config
-						(read-config (:config options))
+				(let [config (merge (read-config (:config options))
 						(select-keys options [:verbose :dry-run]))]
 					(when (:verbose config)
 						(println "config:" (update-in config [:imap] dissoc :password)))
