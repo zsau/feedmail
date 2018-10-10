@@ -13,6 +13,7 @@
 		[clj-time "0.14.4"]
 		[clj-http "3.9.1"]
 		[enlive "1.1.6"]
+		[com.taoensso/timbre "4.10.0"]
 		[zsau/feedparser-clj "0.6.2"]
 		[ch.qos.logback/logback-classic "1.2.3"]
 		[zsau/mail "0.1.0"]])

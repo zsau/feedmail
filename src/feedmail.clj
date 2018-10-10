@@ -11,11 +11,15 @@
 		[clojure.tools.cli :as cli]
 		[feedparser-clj.core :as feed]
 		[mail]
-		[net.cgrand.enlive-html :as html]))
+		[net.cgrand.enlive-html :as html]
+		[taoensso.timbre :as log]))
 
 (def cli-options [
 	["-h" "--help"]
-	["-v" "--verbose"]
+	["-v" nil "Verbosity level"
+		:id :verbosity
+		:default 0
+		:update-fn inc]
 	["-d" "--dry-run" "Don't upload emails or update cache"]
 	["-c" "--config FILE" "Config file path"
 		:default (str (System/getProperty "user.home") "/.config/feedmail/config.clj")
@@ -38,6 +42,14 @@
 			:filter any?
 			:map identity
 			:suppress-errors false}])})
+
+(defn logging-config [verbosity] {
+	:level (condp <= verbosity
+		2 :debug
+		1 :info
+		:warn)
+	:output-fn (fn [{:keys [level msg_]}]
+		(str (str/upper-case (name level)) " " (force msg_)))})
 
 ; based on https://gist.github.com/Gonzih/5814945
 (defmacro try+ "Like try, but can catch multiple exception types with (catch+ [classname*] name expr)."
@@ -176,8 +188,7 @@
 			url (.toString e)))))
 
 (defn check-subscription [config store date {:keys [url] :as subscription}]
-	(when (:verbose config)
-		(println "checking" url))
+	(log/info "checking" url)
 	(try+
 		(let [
 				map-fn (or (:map subscription) identity)
@@ -231,10 +242,10 @@
 			errors
 				(die 1 (str/join "\n" errors))
 			:else
-				(let [config (merge (read-config (:config options))
-						(select-keys options [:verbose :dry-run]))]
-					(when (:verbose config)
-						(println "config:" (update-in config [:imap] dissoc :password)))
-					(.mkdir (java.io.File. (:path (:cache config))))
-					(check-subscriptions config arguments)
-					(shutdown-agents)))))
+				(log/with-merged-config (logging-config (:verbosity options))
+					(let [config (merge (read-config (:config options))
+							(select-keys options [:dry-run]))]
+						(log/debug "config:" (update-in config [:imap] dissoc :password))
+						(.mkdir (java.io.File. (:path (:cache config))))
+						(check-subscriptions config arguments)
+						(shutdown-agents))))))
