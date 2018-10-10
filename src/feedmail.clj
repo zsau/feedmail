@@ -121,9 +121,8 @@
 			items))
 
 (defn resolve-uri [uri base]
-	(if uri
-		(.toString (.resolve (java.net.URI. base) uri))
-		base))
+	(if-not uri base
+		(.toString (.resolve (java.net.URI. base) uri))))
 
 (defn resolve-links
 	([base] ; transducer
@@ -182,7 +181,7 @@
 	(try+
 		(let [
 				map-fn (or (:map subscription) identity)
-				filter-fn (or (:filter subscription) identity)
+				filter-fn (or (:filter subscription) any?)
 				cache-path (cache-path config url)
 				cache (read-cache cache-path)
 				body (fetch url (:date cache))
@@ -195,33 +194,30 @@
 						(filter (comp (complement (set (:ids cache))) :uri))
 						(resolve-links url))
 					(sort-items (:entries feed)))]
-			(when (:verbose config)
-				(println "-> got" (count new-items) "new items")
-				(doseq [e new-items]
-					(println e)))
+			(log/info "-> got" (count new-items) "new items")
+			(doseq [e new-items]
+				(log/debug e))
 			(when-not (:dry-run config)
 				(mail/append-messages store {:name (:folder subscription) :create true}
 					(map (partial item->email config feed)
 						(reverse new-items)))
 				(write-cache cache-path {
 					:date date
-					:ids
-						(take (:size (:cache config))
-							(concat (map :uri new-items)
-								(:ids cache)))})))
+					:ids (take (:size (:cache config))
+						(concat (map :uri new-items)
+							(:ids cache)))})))
 		; ROME throws IllegalArgumentException sometimes for invalid documents
 		(catch+ [IllegalArgumentException java.io.IOException java.net.ConnectException java.net.UnknownHostException javax.mail.MessagingException com.rometools.rome.io.FeedException org.apache.http.HttpException] e
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
 		(catch Exception e (report-feed-error url e) (throw e))))
 
-(defn check-subscriptions [{:keys [imap subscriptions] :as config} subscription-names-to-check]
-	(let [
-			filter-fn (if (seq subscription-names-to-check) (comp (set subscription-names-to-check) :name) any?)
-			date (time.fmt/unparse (time.fmt/formatters :rfc822) (time/now))]
-		(mail/with-store [store imap]
-			; sort by url so our cache can work more effectively
-			(doseq [subscription (sort-by :url (filter filter-fn subscriptions))]
-				(check-subscription config store date subscription)))))
+(defn check-subscriptions [{:keys [imap subscriptions] :as config} names]
+	(let [filter-fn (if (seq names) (comp (set names) :name) any?)]
+		(let [date (time.fmt/unparse (time.fmt/formatters :rfc822) (time/now))]
+			(mail/with-store [store imap]
+				; sort by url, for caching (see memo-fetch)
+				(doseq [subscription (sort-by :url (filter filter-fn subscriptions))]
+					(check-subscription config store date subscription))))))
 
 (defn usage [options-summary]
 	(format "usage: feedmail [options] [FEED_NAME ...]\n\nOptions:\n%s"
