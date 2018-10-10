@@ -1,4 +1,4 @@
-(defproject zsau/feedmail "0.2.6"
+(defproject zsau/feedmail "0.2.7"
 	:description "Uploads RSS/Atom feed items as emails via IMAP."
 	:url "http://example.com/FIXME"
 	:license {
