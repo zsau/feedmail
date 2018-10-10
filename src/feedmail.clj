@@ -164,13 +164,16 @@
 
 (defn fetch* [uri date]
 	(let [uri (java.net.URI. uri)]
-		(if (= "script" (.getScheme uri))
-			(script-get (.getSchemeSpecificPart uri))
-			(http/get (.toString uri) {
-				:http-builder-fns [(fn [builder _] (.disableCookieManagement builder))]
-				:headers (if date {"If-Modified-Since" date} {})
-				:throw-exceptions false
-				:decode-cookies false}))))
+		(condp #(%1 %2) (.getScheme uri)
+			#{"script"}
+				(script-get (.getSchemeSpecificPart uri))
+			#{"http" "https"}
+				(http/get (.toString uri) {
+					:http-builder-fns [(fn [builder _] (.disableCookieManagement builder))]
+					:headers (if date {"If-Modified-Since" date} {})
+					:throw-exceptions false
+					:decode-cookies false})
+			(throw (java.io.IOException. "unsupported URI scheme")))))
 
 ; Memoize fetched URLs to facilitate using the same URL in more than one subscription (e.g. a combined feed that's split via multiple filters). A FIFO cache of size 1 suffices, since we sort subscriptions by URL before fetching.
 (def memo-fetch (memo/fifo fetch* :fifo/threshold 1))
