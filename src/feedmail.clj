@@ -195,10 +195,15 @@
 		(println (format "Error on feed: %s\n%s"
 			url (.toString e)))))
 
-(defn check-subscription [config store date {:keys [url] :as subscription}]
+(defn now []
+	(time/format (time/formatter :rfc-1123-date-time)
+		(time/zoned-date-time (time/zone-id "UTC"))))
+
+(defn check-subscription [config store {:keys [url] :as subscription}]
 	(log/info "checking" url)
 	(try+
 		(let [
+				now (now)
 				map-fn (or (:map subscription) identity)
 				filter-fn (or (:filter subscription) any?)
 				cache-path (cache-path config url)
@@ -221,7 +226,7 @@
 					(map (partial item->email config feed)
 						(reverse new-items)))
 				(write-cache cache-path {
-					:date date
+					:date now
 					:ids (take (:size (:cache config))
 						(concat (map :uri new-items)
 							(:ids cache)))})))
@@ -230,10 +235,6 @@
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
 		(catch Exception e (report-feed-error url e) (throw e))))
 
-(defn now []
-	(time/format (time/formatter :rfc-1123-date-time)
-		(time/zoned-date-time (time/zone-id "UTC"))))
-
 (defn warn-unknown-feeds [subscriptions names]
 	(let [all-names (into #{} (map :name) subscriptions)]
 		(doseq [n (remove all-names names)]
@@ -241,12 +242,11 @@
 
 (defn check-subscriptions [{:keys [imap subscriptions] :as config} names]
 	(warn-unknown-feeds subscriptions names)
-	(let [filter-fn (if (seq names) (comp (set names) :name) any?)]
-		(let [date (now)]
-			(mail/with-store [store imap]
-				; sort by url, for caching (see memo-fetch)
-				(doseq [subscription (sort-by :url (filter filter-fn subscriptions))]
-					(check-subscription config store date subscription))))))
+	(mail/with-store [store imap]
+		(->> subscriptions
+			(filterv (or (some-> names seq set (comp :name)) any?))
+			(sort-by :url) ; sort by url, for caching (see memo-fetch)
+			(mapv (partial check-subscription config store)))))
 
 (defn usage [options-summary]
 	(format "usage: feedmail [options] [FEED_NAME ...]\n\nOptions:\n%s"
