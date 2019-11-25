@@ -10,7 +10,7 @@
 		[org.clojure/clojure "1.9.0"]
 		[org.clojure/core.memoize "0.7.1"]
 		[org.clojure/tools.cli "0.4.1"]
-		[clj-time "0.14.4"]
+		[clojure.java-time "0.3.2"]
 		[clj-http "3.9.1"]
 		[enlive "1.1.6"]
 		[com.taoensso/timbre "4.10.0"]

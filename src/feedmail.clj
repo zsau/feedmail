@@ -4,8 +4,7 @@
 		[java.io PushbackReader ByteArrayInputStream])
 	(:require
 		[clj-http.client :as http]
-		[clj-time.core :as time]
-		[clj-time.format :as time.fmt]
+		[java-time :as time]
 		[clojure.core.memoize :as memo]
 		[clojure.java.shell :as shell]
 		[clojure.string :as str]
@@ -231,9 +230,13 @@
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
 		(catch Exception e (report-feed-error url e) (throw e))))
 
+(defn now []
+	(time/format (time/formatter :rfc-1123-date-time)
+		(time/zoned-date-time (time/zone-id "UTC"))))
+
 (defn check-subscriptions [{:keys [imap subscriptions] :as config} names]
 	(let [filter-fn (if (seq names) (comp (set names) :name) any?)]
-		(let [date (time.fmt/unparse (time.fmt/formatters :rfc822) (time/now))]
+		(let [date (now)]
 			(mail/with-store [store imap]
 				; sort by url, for caching (see memo-fetch)
 				(doseq [subscription (sort-by :url (filter filter-fn subscriptions))]
