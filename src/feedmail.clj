@@ -1,6 +1,7 @@
 (ns feedmail
 	(:gen-class)
-	(:import [java.io PushbackReader ByteArrayInputStream])
+	(:import
+		[java.io PushbackReader ByteArrayInputStream])
 	(:require
 		[clj-http.client :as http]
 		[clj-time.core :as time]
@@ -70,10 +71,15 @@
 	(.digest (java.security.MessageDigest/getInstance "SHA1")
 		(.getBytes s java.nio.charset.StandardCharsets/UTF_8)))
 
+(defn bytes->hex [bytes]
+	(let [hex (StringBuilder.)]
+		(doseq [b bytes]
+			(.append hex (format "%02x" b)))
+		(.toString hex)))
+
 (defn sha1 [s]
-	(.toLowerCase
-		(javax.xml.bind.DatatypeConverter/printHexBinary
-			(sha1-bytes s))))
+	(bytes->hex
+		(sha1-bytes s)))
 
 (defn die [status message]
 	(binding [*out* *err*]
