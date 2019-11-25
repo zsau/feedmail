@@ -234,7 +234,13 @@
 	(time/format (time/formatter :rfc-1123-date-time)
 		(time/zoned-date-time (time/zone-id "UTC"))))
 
+(defn warn-unknown-feeds [subscriptions names]
+	(let [all-names (into #{} (map :name) subscriptions)]
+		(doseq [n (remove all-names names)]
+			(log/warn "unknown feed:" n))))
+
 (defn check-subscriptions [{:keys [imap subscriptions] :as config} names]
+	(warn-unknown-feeds subscriptions names)
 	(let [filter-fn (if (seq names) (comp (set names) :name) any?)]
 		(let [date (now)]
 			(mail/with-store [store imap]
