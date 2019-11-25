@@ -24,7 +24,7 @@
 	["-d" "--dry-run" "Don't upload emails or update cache"]
 	["-c" "--config FILE" "Config file path"
 		:default (str (System/getProperty "user.home") "/.config/feedmail/config.clj")
-		:validate [#(.exists (java.io.File. %)) "no such file"]]]) ;FIXME: real validation (spec?)
+		:validate [#(.exists (java.io.File. ^String %)) "no such file"]]])
 
 (def default-config {
 	:cache {
@@ -67,7 +67,7 @@
 					[form]))]
 		(cons 'try (mapcat transform body))))
 
-(defn sha1-bytes [s]
+(defn sha1-bytes [^String s]
 	(.digest (java.security.MessageDigest/getInstance "SHA1")
 		(.getBytes s java.nio.charset.StandardCharsets/UTF_8)))
 
@@ -123,7 +123,7 @@
 (defn item-content [item]
 	((some-fn :content :description) item))
 
-(defn email-template [s]
+(defn email-template [^String s]
 	(html/template (ByteArrayInputStream. (.getBytes s "UTF-8")) [item]
 		[:a.link] (html/set-attr :href (:link item))
 		[:.title] (html/content (:title item))
@@ -138,7 +138,7 @@
 		(sort-by item-date #(compare %2 %1) items)
 			items))
 
-(defn resolve-uri [uri base]
+(defn resolve-uri [^String uri ^String base]
 	(if-not uri base
 		(.toString (.resolve (java.net.URI. base) uri))))
 
@@ -158,7 +158,7 @@
 			((email-template (:template (:email config)))
 				item))}))
 
-(defn parse-feed [body]
+(defn parse-feed [^String body]
 	(when body
 		(feed/parse-feed
 			(ByteArrayInputStream.
@@ -175,7 +175,7 @@
 				(script-get (.getSchemeSpecificPart uri))
 			#{"http" "https"}
 				(http/get (.toString uri) {
-					:http-builder-fns [(fn [builder _] (.disableCookieManagement builder))]
+					:http-builder-fns [(fn [^org.apache.http.impl.client.HttpClientBuilder builder _] (.disableCookieManagement builder))]
 					:headers (if date {"If-Modified-Since" date} {})
 					:throw-exceptions false
 					:decode-cookies false})
@@ -191,7 +191,7 @@
 			304 nil
 			(throw (java.io.IOException. (str "couldn't fetch feed: HTTP " status))))))
 
-(defn report-feed-error [url e]
+(defn report-feed-error [url ^Throwable e]
 	(binding [*out* *err*]
 		(println (format "Error on feed: %s\n%s"
 			url (.toString e)))))
@@ -255,6 +255,6 @@
 					(let [config (merge (read-config (:config options))
 							(select-keys options [:dry-run]))]
 						(log/debug "config:" (update-in config [:imap] dissoc :password))
-						(.mkdir (java.io.File. (:path (:cache config))))
+						(.mkdir (java.io.File. ^String (:path (:cache config))))
 						(check-subscriptions config arguments)
 						(shutdown-agents))))))
