@@ -8,12 +8,12 @@
 	:main feedmail
 	:dependencies [
 		[ch.qos.logback/logback-classic "1.2.3"]
-		[clj-http "3.10.0"]
+		[clj-http "3.10.1"]
 		[clojure.java-time "0.3.2"]
 		[com.taoensso/timbre "4.10.0"]
 		[enlive "1.1.6"]
 		[org.clojure/clojure "1.10.1"]
-		[org.clojure/core.memoize "0.8.2"]
-		[org.clojure/tools.cli "0.4.2"]
-		[zsau/feedparser-clj "0.6.3"]
-		[zsau/mail "0.1.0"]])
+		[org.clojure/core.memoize "1.0.236"]
+		[org.clojure/tools.cli "1.0.194"]
+		[zsau/feedparser-clj "0.6.4"]
+		[zsau/mail "0.1.1"]])
