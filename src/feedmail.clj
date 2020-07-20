@@ -4,12 +4,12 @@
 		[java.io PushbackReader ByteArrayInputStream])
 	(:require
 		[clj-http.client :as http]
-		[java-time :as time]
 		[clojure.core.memoize :as memo]
 		[clojure.java.shell :as shell]
 		[clojure.string :as str]
 		[clojure.tools.cli :as cli]
 		[feedparser-clj.core :as feed]
+		[java-time :as time]
 		[mail]
 		[net.cgrand.enlive-html :as html]
 		[taoensso.timbre :as log]))
@@ -51,8 +51,9 @@
 	:output-fn (fn [{:keys [level msg_]}]
 		(str (str/upper-case (name level)) " " (force msg_)))})
 
-; based on https://gist.github.com/Gonzih/5814945
-(defmacro try+ "Like try, but can catch multiple exception types with (catch+ [classname*] name expr)."
+;; based on https://gist.github.com/Gonzih/5814945
+(defmacro try+
+"Like try, but can catch multiple exception types with (catch+ [classname*] name expr)."
 	[& body]
 	(letfn [
 			(catch+? [form]
@@ -180,8 +181,10 @@
 					:decode-cookies false})
 			(throw (java.io.IOException. "unsupported URI scheme")))))
 
-; Memoize fetched URLs to facilitate using the same URL in more than one subscription (e.g. a combined feed that's split via multiple filters). A FIFO cache of size 1 suffices, since we sort subscriptions by URL before fetching.
-(def memo-fetch (memo/fifo fetch* :fifo/threshold 1))
+(def memo-fetch
+"Memoizes fetched URLs to facilitate using the same URL in more than one subscription (e.g. a combined feed that's split via multiple filters)."
+	;; A FIFO cache of size 1 suffices, since we sort subscriptions by URL before fetching."
+	(memo/fifo fetch* :fifo/threshold 1))
 
 (defn fetch [url date]
 	(let [{:keys [status body]} (memo-fetch url date)]
@@ -230,7 +233,7 @@
 					:ids (take (:size (:cache config))
 						(concat (map :uri new-items)
 							(:ids cache)))})))
-		; ROME throws IllegalArgumentException sometimes for invalid documents
+		;; ROME throws IllegalArgumentException sometimes for invalid documents
 		(catch+ [IllegalArgumentException java.io.IOException java.net.ConnectException java.net.UnknownHostException javax.mail.MessagingException com.rometools.rome.io.FeedException org.apache.http.HttpException] e
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
 		(catch Exception e (report-feed-error url e) (throw e))))
