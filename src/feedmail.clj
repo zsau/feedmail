@@ -8,7 +8,7 @@
 		[clojure.java.shell :as shell]
 		[clojure.string :as str]
 		[clojure.tools.cli :as cli]
-		[feedparser-clj.core :as feed]
+		[rome-clj :as rome]
 		[java-time :as time]
 		[mail]
 		[net.cgrand.enlive-html :as html]
@@ -158,23 +158,20 @@
 			((email-template (:template (:email config)))
 				item))}))
 
-(defn parse-feed [^String body]
-	(when body
-		(feed/parse-feed
-			(ByteArrayInputStream.
-				(.getBytes body "UTF-8")))))
-
-(defn script-get [path]
-	(let [{:keys [exit out]} (shell/sh path)] ; !!! DANGER: running arbitrary external command from config !!!
-		{:body out, :status (if (zero? exit) 200 500)}))
+(defn exec [cmd]
+	;; !!! DANGER: runs arbitrary external command !!!
+	(let [{:keys [exit out]} (shell/sh "sh" "-c" cmd :out-enc :bytes)] {
+		:body (ByteArrayInputStream. out)
+		:status (if (zero? exit) 200 500)}))
 
 (defn fetch* [uri date]
 	(let [uri (java.net.URI. uri)]
-		(condp #(%1 %2) (.getScheme uri)
-			#{"script"}
-				(script-get (.getSchemeSpecificPart uri))
-			#{"http" "https"}
+		(case (.getScheme uri)
+			"exec"
+				(exec (.getSchemeSpecificPart uri))
+			("http" "https")
 				(http/get (.toString uri) {
+					:as :stream
 					:http-builder-fns [(fn [^org.apache.http.impl.client.HttpClientBuilder builder _] (.disableCookieManagement builder))]
 					:headers (if date {"If-Modified-Since" date} {})
 					:throw-exceptions false
@@ -212,7 +209,7 @@
 				cache-path (cache-path config url)
 				cache (read-cache cache-path)
 				body (fetch url (:date cache))
-				feed (parse-feed body)
+				feed (some-> body rome/parse)
 				new-items (into []
 					(comp
 						(take (:size (:cache config)))
