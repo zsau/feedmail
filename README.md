@@ -40,13 +40,13 @@ Here's a more comprehensive example, which assumes more Clojure knowledge. Keys 
  :subscriptions [
    {:url "https://news.ycombinator.com/rss"
     :folder "Job Hunting"
-    ;; include only items whose title includes the text "Who is hiring?"
+    ;; Include only items whose title includes specific text:
     :filter #(.contains (:title %) "Who is hiring?")}
    {:url "http://nedroid.com/feed/"
     :folder "Comics/Nedroid"
-    ;; Override the author of each entry to be "Beartato"
+    ;; Override the author of each entry:
     :map #(assoc % :author "Beartato")
-    ;; Squelches output from any errors encountered while fetching this feed.
+    ;; Squelch output from errors encountered while fetching this feed.
     ;; Useful for flaky feeds that generate too many cron emails.
     :suppress-errors true}
    ;; URLs with the scheme `exec:` tell feedmail to execute a shell command,
