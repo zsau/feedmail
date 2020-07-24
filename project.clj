@@ -1,4 +1,4 @@
-(defproject zsau/feedmail "0.2.8"
+(defproject zsau/feedmail "1.0.0"
 	:description "RSS/Atom feed client that converts items to emails"
 	:url "https://github.com/zsau/feedmail"
 	:license {
