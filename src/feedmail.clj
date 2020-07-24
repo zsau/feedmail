@@ -45,6 +45,7 @@
 
 (defn logging-config [verbosity] {
 	:level (condp <= verbosity
+		3 :trace
 		2 :debug
 		1 :info
 		:warn)
@@ -199,7 +200,7 @@
 		(time/zoned-date-time (time/zone-id "UTC"))))
 
 (defn check-subscription [{:keys [url] :as subscription} config store]
-	(log/info "checking" url)
+	(log/info "checking:" url)
 	(try+
 		(let [
 				now (now)
@@ -219,16 +220,17 @@
 					(sort-items (:entries feed)))]
 			(log/info "-> got" (count new-items) "new items")
 			(doseq [e new-items]
-				(log/debug e))
-			(when-not (:dry-run config)
-				(mail/append-messages store {:name (:folder subscription) :create true}
-					(mapv #(item->email % config feed)
-						(reverse new-items)))
-				(write-cache cache-path {
-					:date now
-					:ids (->> (:ids cache)
-						(into (mapv :uri new-items))
-						(take (:size (:cache config))))})))
+				(log/debug "new item:" e))
+			(let [emails (->> new-items reverse (mapv #(item->email % config feed)))]
+				(doseq [e emails]
+					(log/trace "email:" e))
+				(when-not (:dry-run config)
+					(mail/append-messages store {:name (:folder subscription) :create true} emails)
+					(write-cache cache-path {
+						:date now
+						:ids (->> (:ids cache)
+							(into (mapv :uri new-items))
+							(take (:size (:cache config))))}))))
 		;; ROME throws IllegalArgumentException sometimes for invalid documents
 		(catch+ [IllegalArgumentException java.io.IOException java.net.ConnectException java.net.UnknownHostException javax.mail.MessagingException com.rometools.rome.io.FeedException org.apache.http.HttpException] e
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
