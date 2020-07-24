@@ -15,5 +15,5 @@
 		[org.clojure/clojure "1.10.1"]
 		[org.clojure/core.memoize "1.0.236"]
 		[org.clojure/tools.cli "1.0.194"]
-		[zsau/rome-clj "1.0.1"]
+		[zsau/rome-clj "1.0.2"]
 		[zsau/mail "0.1.1"]])
