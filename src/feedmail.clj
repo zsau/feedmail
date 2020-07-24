@@ -112,8 +112,9 @@
 (def item-date (some-fn :updated-date :published-date))
 
 (defn item-author [item feed]
-	(let [author (first (:authors item))] {
-		:email (or (:email author) "feedmail@localhost")
+	(let [[author] (:authors item)] {
+		:email (:email author
+			(str "feedmail@" (.getHostName (java.net.InetAddress/getLocalHost))))
 		:name (or
 			(:name author)
 			(:author item) ; allows (assoc % :author "Bob") in config files
