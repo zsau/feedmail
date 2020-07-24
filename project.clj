@@ -1,6 +1,6 @@
 (defproject zsau/feedmail "0.2.8"
 	:description "RSS/Atom feed client that converts items to emails"
-	:url "http://example.com/FIXME"
+	:url "https://github.com/zsau/feedmail"
 	:license {
 		:name "Eclipse Public License"
 		:url "http://www.eclipse.org/legal/epl-v10.html"}
