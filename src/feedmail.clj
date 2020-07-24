@@ -100,7 +100,7 @@
 (defn read-cache [path]
 	(try
 		(let [[date & ids] (str/split-lines (slurp path))]
-			{:date date :ids ids})
+			{:date date, :ids ids})
 		(catch java.io.FileNotFoundException e)))
 
 (defn write-cache [path cache]
@@ -109,10 +109,9 @@
 			(cons (:date cache)
 				(:ids cache)))))
 
-(defn item-date [item]
-	((some-fn :updated-date :published-date) item))
+(def item-date (some-fn :updated-date :published-date))
 
-(defn item-author [feed item]
+(defn item-author [item feed]
 	(let [author (first (:authors item))] {
 		:email (or (:email author) "feedmail@localhost")
 		:name (or
@@ -120,8 +119,7 @@
 			(:author item) ; allows (assoc % :author "Bob") in config files
 			(:title feed))}))
 
-(defn item-content [item]
-	((some-fn :content :description) item))
+(def item-content (some-fn :content :description))
 
 (defn email-template [^String s]
 	(html/template (ByteArrayInputStream. (.getBytes s "UTF-8")) [item]
@@ -148,8 +146,8 @@
 	([base items]
 		(into [] (resolve-links base) items)))
 
-(defn item->email [config feed item]
-	(let [author (item-author feed item)] {
+(defn item->email [item config feed]
+	(let [author (item-author item feed)] {
 		:from (mail/address (:email author) (:name author))
 		:to (mail/address (recipient (:imap config)))
 		:subject (:title item)
@@ -223,13 +221,13 @@
 				(log/debug e))
 			(when-not (:dry-run config)
 				(mail/append-messages store {:name (:folder subscription) :create true}
-					(map (partial item->email config feed)
+					(mapv #(item->email % config feed)
 						(reverse new-items)))
 				(write-cache cache-path {
 					:date now
-					:ids (take (:size (:cache config))
-						(concat (map :uri new-items)
-							(:ids cache)))})))
+					:ids (->> (:ids cache)
+						(into (mapv :uri new-items))
+						(take (:size (:cache config))))})))
 		;; ROME throws IllegalArgumentException sometimes for invalid documents
 		(catch+ [IllegalArgumentException java.io.IOException java.net.ConnectException java.net.UnknownHostException javax.mail.MessagingException com.rometools.rome.io.FeedException org.apache.http.HttpException] e
 			(when-not (:suppress-errors subscription) (report-feed-error url e)))
