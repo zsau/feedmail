@@ -199,7 +199,7 @@
 	(time/format (time/formatter :rfc-1123-date-time)
 		(time/zoned-date-time (time/zone-id "UTC"))))
 
-(defn check-subscription [config store {:keys [url] :as subscription}]
+(defn check-subscription [{:keys [url] :as subscription} config store]
 	(log/info "checking" url)
 	(try+
 		(let [
@@ -240,13 +240,21 @@
 		(doseq [n (remove all-names names)]
 			(log/warn "unknown feed:" n))))
 
-(defn check-subscriptions [{:keys [imap subscriptions] :as config} names]
+(defn check-subscriptions* [config subscriptions]
+	(if (:dry-run config)
+		(doseq [s subscriptions]
+			(check-subscription s config nil))
+		(mail/with-store [store (:imap config)]
+			(doseq [s subscriptions]
+				(check-subscription s config store)))))
+
+(defn check-subscriptions [{:keys [subscriptions] :as config} names]
 	(warn-unknown-feeds subscriptions names)
-	(mail/with-store [store imap]
+	(let [include? (or (some-> names seq set (comp :name)) any?)]
 		(->> subscriptions
-			(filterv (or (some-> names seq set (comp :name)) any?))
-			(sort-by :url) ; sort by url, for caching (see memo-fetch)
-			(mapv (partial check-subscription config store)))))
+			(filterv include?)
+			(sort-by :url) ; sort for caching (see `memo-fetch`)
+			(check-subscriptions* config))))
 
 (defn usage [options-summary]
 	(format "usage: feedmail [options] [FEED_NAME ...]\n\nOptions:\n%s"
